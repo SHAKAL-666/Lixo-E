@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Home - E-Lixo{% endblock %}
+{% block content %}
+<div class="py-5 hero">
+  <div class="row align-items-center gy-4">
+    <div class="col-lg-6">
+      <div class="card bg-glass p-4 h-100">
+        <span class="badge bg-primary mb-3">Catalogação moderna</span>
+        <h1 class="display-6 hero-title">Transforme imagens em dados de reciclagem</h1>
+        <p class="section-note">Envie uma foto ou use a câmera do celular para descobrir correspondências de lixo eletrônico e cadastrar itens no catálogo com confiança.</p>
+        <div class="mb-4">
+          <label class="form-label text-white">Selecionar arquivo</label>
+          <input id="fileInput" class="form-control form-control-lg" type="file" accept="image/*" capture="environment" />
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge category-badge">Sustentabilidade</span>
+          <span class="badge category-badge">Reciclagem</span>
+          <span class="badge category-badge">Inventário</span>
+          <span class="badge category-badge">Tecnologia</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card bg-glass p-4 result-card">
+        <div id="previewWrap" class="mb-4 text-center"></div>
+        <div id="result" class="card-transparent p-3" style="min-height: 260px; display: flex; align-items: center; justify-content: center;">
+          <div class="text-center section-note">Selecione uma imagem para analisar e cadastrar em seguida.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 row g-3">
+    <div class="col-md-4">
+      <div class="card card-transparent p-3 catalog-card">
+        <h6>Detecção de duplicatas</h6>
+        <p class="section-note mb-0">Encontre imagens parecidas automaticamente e evite entradas repetidas no catálogo.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-transparent p-3 catalog-card">
+        <h6>Sugestões inteligentes</h6>
+        <p class="section-note mb-0">A plataforma informa a categoria mais provável com base em imagens semelhantes.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-transparent p-3 catalog-card">
+        <h6>Catálogo visual</h6>
+        <p class="section-note mb-0">Mantenha registros organizados com imagens e explicações para cada item.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 text-end">
+    <a href="/catalogs" class="btn btn-outline-light btn-lg">Ver catálogo completo</a>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const categories = [
+    'Equipamentos de informática',
+    'Dispositivos de comunicação',
+    'Equipamentos de áudio e vídeo',
+    'Pilhas e baterias',
+    'Carregadores e cabos',
+    'Eletrodomésticos eletrônicos',
+    'Equipamentos de iluminação',
+    'Componentes eletrônicos'
+  ];
+
+  const explanations = {
+    'Equipamentos de informática': 'Computadores, notebooks, monitores, impressoras e acessórios relacionados ao processamento de dados.',
+    'Dispositivos de comunicação': 'Celulares, modems, roteadores e outros dispositivos usados para comunicação de voz e dados.',
+    'Equipamentos de áudio e vídeo': 'Televisores, caixas de som, câmeras, aparelhos de som e similares.',
+    'Pilhas e baterias': 'Pilhas alcalinas, baterias recarregáveis e baterias de lítio usadas em equipamentos eletrônicos.',
+    'Carregadores e cabos': 'Carregadores, cabos USB, cabos de energia e adaptadores associados a dispositivos eletrônicos.',
+    'Eletrodomésticos eletrônicos': 'Aparelhos domésticos com componentes eletrônicos, como micro-ondas, liquidificadores e ferros elétricos.',
+    'Equipamentos de iluminação': 'Lâmpadas, luminárias e lâmpadas LED contendo componentes eletrônicos ou materiais recicláveis especiais.',
+    'Componentes eletrônicos': 'Placas, resistores, capacitores, chips, e outros componentes usados em circuitos eletrônicos.'
+  };
+
+  const fileInput = document.getElementById('fileInput');
+  const previewWrap = document.getElementById('previewWrap');
+  const resultDiv = document.getElementById('result');
+
+  fileInput.addEventListener('change', async (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+
+    previewWrap.innerHTML = '';
+    const img = document.createElement('img');
+    img.className = 'preview';
+    img.src = URL.createObjectURL(file);
+    previewWrap.appendChild(img);
+
+    const form = new FormData();
+    form.append('image', file);
+    resultDiv.innerHTML = '<div class="text-white text-center">Enviando e analisando...</div>';
+
+    const res = await fetch('/upload', { method: 'POST', body: form });
+    const body = await res.json();
+    if (body.error) {
+      resultDiv.innerHTML = `<div class="text-danger">Erro: ${body.error}</div>`;
+      return;
+    }
+
+    if (body.matched) {
+      resultDiv.innerHTML = `
+        <div class="mb-3"><strong>Imagem já conhecida</strong> (distância ${body.match.distance})</div>
+        <div class="mb-2">Categoria: <span class="badge bg-info text-dark">${body.match.category || '---'}</span></div>
+        <div class="mb-3">Explicação: ${body.match.explanation || '---'}</div>
+        <img src="/uploads/${body.match.filename}" class="preview" />
+      `;
+    } else {
+      const select = document.createElement('select');
+      select.name = 'category';
+      select.className = 'form-select mb-3';
+      categories.forEach(c => {
+        const opt = document.createElement('option'); opt.value = c; opt.text = c; select.appendChild(opt);
+      });
+
+      const exp = document.createElement('textarea');
+      exp.className = 'form-control mb-3';
+      exp.placeholder = 'Explicação (opcional)';
+      exp.rows = 4;
+      exp.value = explanations[select.value] || '';
+      select.addEventListener('change', () => {
+        exp.value = explanations[select.value] || '';
+      });
+
+      const suggestionWrap = document.createElement('div');
+      suggestionWrap.className = 'mb-3';
+      if (body.suggested) {
+        const s = body.suggested;
+        const p = document.createElement('div');
+        p.className = 'alert alert-info';
+        p.innerHTML = `Sugestão automática: <strong>${s.category}</strong> (confiança ${s.confidence})`;
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'btn btn-sm btn-success mb-2';
+        acceptBtn.textContent = 'Aceitar sugestão';
+        acceptBtn.onclick = () => { select.value = s.category; exp.value = explanations[s.category] || ''; };
+        suggestionWrap.appendChild(p);
+        suggestionWrap.appendChild(acceptBtn);
+      }
+      if (body.ml_suggestion) {
+        const m = body.ml_suggestion;
+        const pm = document.createElement('div');
+        pm.className = 'alert alert-success';
+        let mlText = `<strong>IA Automática:</strong> ${m.category || m.label} (confiança ${m.confidence})`;
+        if (m.explanation) mlText += `<br/><small>${m.explanation}</small>`;
+        pm.innerHTML = mlText;
+        if (m.category) {
+          const acceptMLBtn = document.createElement('button');
+          acceptMLBtn.className = 'btn btn-sm btn-success mt-2';
+          acceptMLBtn.textContent = 'Usar IA';
+          acceptMLBtn.onclick = () => { select.value = m.category; exp.value = m.explanation || explanations[m.category] || ''; };
+          pm.appendChild(document.createElement('br'));
+          pm.appendChild(acceptMLBtn);
+        }
+        suggestionWrap.appendChild(pm);
+      }
+
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary';
+      btn.textContent = 'Cadastrar como catálogo';
+      btn.onclick = async () => {
+        btn.disabled = true;
+        resultDiv.innerHTML = '<div class="text-white text-center">Salvando...</div>';
+        const payload = { filename: body.filename, category: select.value, explanation: exp.value, phash: body.phash };
+        const r = await fetch('/catalog', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)});
+        const j = await r.json();
+        if (j.ok) {
+          resultDiv.innerHTML = `
+            <div class="mb-3 text-success"><strong>Imagem cadastrada com sucesso.</strong></div>
+            <div>Categoria: <span class="badge bg-info text-dark">${select.value}</span></div>
+            <img src="/uploads/${body.filename}" class="preview mt-3" />
+          `;
+        } else {
+          resultDiv.innerHTML = `<div class="text-danger">Erro ao cadastrar: ${j.error || JSON.stringify(j)}</div>`;
+        }
+      };
+
+      resultDiv.innerHTML = '';
+      if (suggestionWrap.children.length) resultDiv.appendChild(suggestionWrap);
+      resultDiv.appendChild(select);
+      resultDiv.appendChild(exp);
+      resultDiv.appendChild(btn);
+    }
+  });
+</script>
+{% endblock %}

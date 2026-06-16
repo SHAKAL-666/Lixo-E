@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Login — E-Lixo{% endblock %}
+{% block content %}
+<div class="py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+      <div class="card bg-glass border-0 shadow-sm p-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} alert-dismissible fade show" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <h2 class="mb-3">Bem-vindo de volta</h2>
+        <p class="section-note">Entre com a conta administrativa para gerenciar o catálogo.</p>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Usuário</label>
+            <input name="username" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Senha</label>
+            <input name="password" type="password" class="form-control" required />
+          </div>
+          <button class="btn btn-primary w-100">Entrar</button>
+        </form>
+      </div>
+      <p class="text-center mt-3 footer-note"><a class="text-decoration-none text-white-50" href="/">Voltar ao início</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

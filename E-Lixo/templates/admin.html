@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Admin — E-Lixo{% endblock %}
+{% block content %}
+<div class="py-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="display-6 mb-2">Painel Administrativo</h1>
+      <p class="section-note mb-0">Gerencie o catálogo, visualize itens cadastrados e remova entradas duplicadas ou incorretas.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light" href="/">Home</a>
+      <a class="btn btn-danger" href="/logout">Logout</a>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-4">
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% if items|length == 0 %}
+    <div class="alert alert-secondary">Nenhum item cadastrado.</div>
+  {% else %}
+    <div class="table-responsive">
+      <table class="table table-borderless text-white align-middle">
+        <thead>
+          <tr class="text-muted small"><th>#</th><th>Preview</th><th>Categoria</th><th>Explicação</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+          <tr class="border-top border-white-10">
+            <td>{{ it.id }}</td>
+            <td><img src="/uploads/{{ it.filename }}" class="rounded-3" style="max-height:70px;"/></td>
+            <td><span class="badge category-badge">{{ it.category }}</span></td>
+            <td>{{ it.explanation or '—' }}</td>
+            <td>
+              <form method="post" action="/admin/delete/{{ it.id }}" onsubmit="return confirm('Remover item #{{ it.id }}?')">
+                <button class="btn btn-sm btn-danger">Remover</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

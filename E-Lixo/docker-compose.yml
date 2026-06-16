@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    image: e-lixo:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - E_LIXO_ADMIN_USER=admin
+      - E_LIXO_ADMIN_PASS=password
+    restart: unless-stopped
